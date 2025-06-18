@@ -45,6 +45,8 @@ router.post('/games/join', auth, controllers.joinGame);
 router.post('/games/:gameId/move', auth, controllers.makeMove);
 router.get('/games/history', auth, controllers.getGameHistory);
 router.get('/games/:id', auth, controllers.getGameDetails);
+// Adicione esta linha em routes.js
+router.get('/games/details/:gameCode', auth, controllers.getGameDetailsByCode);
 
 
 // --- ROTAS DE ADMIN (REQUER AUTH E PRIVILÉGIOS DE ADMIN) ---

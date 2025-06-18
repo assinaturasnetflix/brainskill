@@ -1,5 +1,5 @@
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+const jwt = aarequire('jsonwebtoken');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const { User, Transaction, Game, Settings } = require('./models');
@@ -525,5 +525,27 @@ exports.adminUpdateSettings = async (req, res) => {
         res.json(updatedSettings);
     } catch(err) {
         res.status(500).json({ message: "Erro ao atualizar configurações" });
+    }
+};
+// Adicione esta função junto com os outros controllers de jogo
+
+exports.getGameDetailsByCode = async (req, res) => {
+    try {
+        const { gameCode } = req.params;
+        // Buscamos o jogo e populamos os dados do jogador que o criou
+        const game = await Game.findOne({ gameCode: gameCode.toUpperCase() })
+                               .populate('players', 'username avatar');
+
+        if (!game) {
+            return res.status(404).json({ message: "Partida não encontrada com este código." });
+        }
+        if (game.status !== 'waiting') {
+            return res.status(400).json({ message: "Esta partida não está mais aguardando um oponente." });
+        }
+
+        res.json(game);
+
+    } catch(err) {
+        res.status(500).json({ message: "Erro no servidor ao buscar detalhes da partida." });
     }
 };
