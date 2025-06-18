@@ -1,5 +1,5 @@
 const bcrypt = require('bcryptjs');
-const jwt = aarequire('jsonwebtoken');
+const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const { User, Transaction, Game, Settings } = require('./models');
