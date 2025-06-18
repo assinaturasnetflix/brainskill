@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="pt-MZ">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - BrainSkill</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
+
+    <style>
+        :root {
+            --primary-color: #00D1FF; --primary-color-dark: #00AEEF; --bg-color: #F8FAFC; --surface-color: #FFFFFF;
+            --text-primary: #0F172A; --text-secondary: #64748B; --border-color: #E2E8F0;
+            --success-color: #38A169;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Poppins', sans-serif; background-color: var(--bg-color); color: var(--text-primary); }
+
+        .dashboard-layout { display: flex; min-height: 100vh; }
+        
+        /* --- SIDEBAR (DESKTOP) --- */
+        .sidebar {
+            width: 260px; background-color: var(--surface-color); border-right: 1px solid var(--border-color);
+            padding: 30px 20px; display: flex; flex-direction: column; transition: transform 0.3s ease;
+        }
+        .sidebar .logo { font-weight: 700; font-size: 2rem; color: var(--text-primary); text-decoration: none; text-align: center; margin-bottom: 40px; }
+        .sidebar .logo span { color: var(--primary-color); }
+        .sidebar-nav { flex-grow: 1; }
+        .sidebar-nav a { display: flex; align-items: center; gap: 15px; padding: 15px; text-decoration: none; color: var(--text-secondary); border-radius: 10px; margin-bottom: 10px; font-weight: 500; }
+        .sidebar-nav a.active, .sidebar-nav a:hover { background-color: rgba(0, 209, 255, 0.1); color: var(--primary-color-dark); }
+        .sidebar-nav a .icon { font-size: 1.4rem; }
+
+        /* --- CONTEÚDO PRINCIPAL --- */
+        .main-content { flex: 1; padding: 30px; padding-bottom: 120px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
+        .balance-widget {
+            display: flex; align-items: center; background-color: var(--surface-color);
+            border-radius: 50px; border: 1px solid var(--border-color);
+            position: relative; overflow: hidden; height: 50px; padding-right: 20px;
+        }
+        .balance-widget .avatar-wrapper { position: relative; width: 50px; height: 50px; }
+        .balance-widget .user-avatar { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); z-index: 2; }
+        .balance-widget .add-balance-btn { background-color: var(--primary-color); color: white; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; text-decoration: none; position: absolute; top: 0; left: 0; z-index: 1; }
+        .balance-widget .balance { font-size: 1.1rem; font-weight: 600; color: var(--text-primary); margin-left: 15px; }
+        .balance-widget:hover .user-avatar { transform: translateX(-100%); }
+        #logout-btn { background: none; border: none; cursor: pointer; color: var(--text-secondary); font-size: 1.8rem; }
+        
+        /* --- SEÇÃO DE JOGO --- */
+        .grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        @media (min-width: 768px) { .grid { grid-template-columns: 1fr 1fr; gap: 30px; } }
+        .card { background-color: var(--surface-color); padding: 30px; border-radius: 15px; border: 1px solid var(--border-color); }
+        .card h3 { font-size: 1.3rem; margin-bottom: 20px; }
+        .input-group { margin-bottom: 20px; }
+        .input-group label { display: block; font-weight: 500; margin-bottom: 8px; font-size: 0.9rem; }
+        .input-field { width: 100%; background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px 15px; font-size: 1rem; }
+        .btn { display: inline-flex; align-items: center; gap: 8px; justify-content: center; width: 100%; padding: 14px; border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer; border: none; text-align: center; }
+        .btn-primary { background-color: var(--primary-color); color: #FFF; }
+        .btn-secondary { background: var(--surface-color); color: var(--text-primary); border: 1px solid var(--border-color); }
+        .btn.loading .spinner { display: block; }
+        .btn .btn-text { transition: opacity 0.2s ease; }
+        .btn.loading .btn-text { opacity: 0; }
+        .spinner { position: absolute; width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.5); border-top-color: #FFF; border-radius: 50%; display: none; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* --- BOTTOM BAR (MOBILE) --- */
+        .bottom-bar { display: none; position: fixed; bottom: 20px; left: 15px; right: 15px; height: 70px; background-color: var(--surface-color); box-shadow: 0 -5px 25px rgba(0, 0, 0, 0.08); z-index: 1000; border-radius: 35px; border: 1px solid var(--border-color); }
+        .bottom-bar-nav { height: 100%; display: flex; justify-content: space-around; align-items: center; }
+        .bottom-bar-nav a { display: flex; flex-direction: column; align-items: center; gap: 5px; text-decoration: none; color: var(--text-secondary); font-size: 0.7rem; font-weight: 500; padding: 5px; position: relative; }
+        .bottom-bar-nav a .icon { font-size: 1.5rem; }
+        .bottom-bar-nav a.active { color: var(--primary-color); }
+        .bottom-bar-nav a.play-btn { transform: translateY(-20px); background-color: var(--primary-color); color: white; width: 60px; height: 60px; border-radius: 50%; justify-content: center; box-shadow: 0 5px 15px rgba(0, 209, 255, 0.4); border: 4px solid var(--bg-color); }
+        .bottom-bar-nav a.play-btn .icon { font-size: 2rem; }
+        .bottom-bar-nav a.play-btn span { display: none; }
+
+        /* ⭐ MODAL DE CONFIRMAÇÃO DE PARTIDA ⭐ */
+        .modal { display: none; position: fixed; z-index: 1001; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); justify-content: center; align-items: center; }
+        .modal.active { display: flex; }
+        .modal-content { background-color: var(--surface-color); padding: 30px; border-radius: 15px; width: 90%; max-width: 400px; position: relative; text-align: center; animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .modal-close { position: absolute; top: 10px; right: 15px; font-size: 1.8rem; cursor: pointer; color: var(--text-secondary); }
+        .modal-content h3 { margin-bottom: 20px; font-size: 1.5rem; }
+        .match-details img { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary-color); margin-bottom: 15px; }
+        .match-details p { font-size: 1.1rem; margin-bottom: 20px; }
+        .bet-info { background-color: var(--bg-color); padding: 15px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border-color); }
+        .bet-info span { color: var(--text-secondary); }
+        .bet-info strong { font-size: 1.3rem; color: var(--success-color); }
+        .modal-actions { display: flex; gap: 15px; margin-top: 30px; }
+
+        /* --- RESPONSIVIDADE --- */
+        @media (max-width: 900px) {
+            .sidebar { display: none; }
+            .bottom-bar { display: block; }
+            .main-content { padding: 20px; padding-bottom: 120px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-layout">
+        <aside class="sidebar">
+            <a href="index.html" class="logo">Brain<span>Skill</span></a>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-link active"><iconify-icon class="icon" icon="mdi:checkerboard"></iconify-icon><span>Jogar</span></a>
+                <a href="wallet.html" class="nav-link"><iconify-icon class="icon" icon="mdi:wallet"></iconify-icon><span>Carteira</span></a>
+                <a href="history.html" class="nav-link"><iconify-icon class="icon" icon="mdi:history"></iconify-icon><span>Histórico</span></a>
+                <a href="profile.html" class="nav-link"><iconify-icon class="icon" icon="mdi:account-circle"></iconify-icon><span>Perfil</span></a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <header class="header">
+                 <div class="balance-widget">
+                    <div class="avatar-wrapper">
+                        <a href="profile.html"><img class="user-avatar" id="user-avatar" src="https://via.placeholder.com/100" alt="Avatar"></a>
+                        <a href="wallet.html" class="add-balance-btn" title="Ir para Carteira"><iconify-icon icon="mdi:plus"></iconify-icon></a>
+                    </div>
+                    <span class="balance" id="user-balance">0.00 MT</span>
+                 </div>
+                 <button id="logout-btn" title="Sair"><iconify-icon icon="mdi:logout"></iconify-icon></button>
+            </header>
+            
+            <div class="grid">
+                <div class="card">
+                    <h3>Criar Nova Partida</h3>
+                    <form id="create-game-form">
+                        <div class="input-group">
+                            <label for="bet-amount">Valor da Aposta (MT)</label>
+                            <input type="number" id="bet-amount" class="input-field" placeholder="Ex: 50" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary"><span class="btn-text">Gerar Código</span><div class="spinner"></div></button>
+                    </form>
+                </div>
+                <div class="card">
+                    <h3>Entrar em uma Partida</h3>
+                    <form id="join-game-form">
+                         <div class="input-group">
+                            <label for="game-code">Código da Partida</label>
+                            <input type="text" id="game-code" class="input-field" placeholder="Cole o código aqui" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary"><span class="btn-text">Verificar Desafio</span><div class="spinner"></div></button>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <nav class="bottom-bar">
+        <div class="bottom-bar-nav">
+            <a href="dashboard.html" class="nav-link active"><iconify-icon class="icon" icon="mdi:home-variant"></iconify-icon><span>Início</span></a>
+            <a href="wallet.html" class="nav-link"><iconify-icon class="icon" icon="mdi:wallet"></iconify-icon><span>Carteira</span></a>
+            <a href="dashboard.html" class="nav-link play-btn"><iconify-icon class="icon" icon="mdi:checkerboard"></iconify-icon><span>Jogar</span></a>
+            <a href="history.html" class="nav-link"><iconify-icon class="icon" icon="mdi:history"></iconify-icon><span>Histórico</span></a>
+            <a href="profile.html" class="nav-link"><iconify-icon class="icon" icon="mdi:account-circle"></iconify-icon><span>Perfil</span></a>
+        </div>
+    </nav>
+
+    <!-- MODAL DE CONFIRMAÇÃO DE PARTIDA -->
+    <div id="confirm-join-modal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" data-close-modal>×</span>
+            <h3>Você foi desafiado!</h3>
+            <div class="match-details">
+                <img id="opponent-avatar" src="https://via.placeholder.com/100" alt="Avatar do oponente">
+                <p><strong><span id="opponent-name"></span></strong> convidou você para uma partida.</p>
+                <div class="bet-info">
+                    <span>Valor da Aposta</span>
+                    <strong id="match-bet-amount">100 MT</strong>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button id="decline-match-btn" class="btn btn-secondary">Recusar</button>
+                <button id="accept-match-btn" class="btn btn-primary"><span class="btn-text">Aceitar Desafio</span><div class="spinner"></div></button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const API_URL = 'https://brainskill.onrender.com/api'; 
+        const token = localStorage.getItem('token');
+        let user = JSON.parse(localStorage.getItem('user'));
+
+        // --- INICIALIZAÇÃO ---
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!token || !user) {
+                window.location.href = 'login.html';
+                return;
+            }
+            populateUI();
+            setupEventListeners();
+        });
+
+        function populateUI() {
+            document.getElementById('user-avatar').src = user.avatar;
+            document.getElementById('user-balance').textContent = `${parseFloat(user.balance).toFixed(2)} MT`;
+        }
+
+        // --- EVENT LISTENERS ---
+        function setupEventListeners() {
+            document.getElementById('logout-btn').addEventListener('click', logout);
+            document.getElementById('create-game-form').addEventListener('submit', createGame);
+            document.getElementById('join-game-form').addEventListener('submit', handleFindGame);
+            
+            // Listeners do modal
+            document.querySelector('.modal-close').addEventListener('click', closeModal);
+            document.getElementById('decline-match-btn').addEventListener('click', closeModal);
+            document.getElementById('accept-match-btn').addEventListener('click', acceptMatch);
+        }
+
+        // --- LÓGICA DE NAVEGAÇÃO E AÇÕES ---
+        function logout() { localStorage.clear(); window.location.href = 'login.html'; }
+
+        async function createGame(e) {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            setButtonLoading(btn, true);
+            const betAmount = document.getElementById('bet-amount').value;
+            const result = await apiCall('/games/create', 'POST', { betAmount });
+            
+            if (result && result.gameCode) {
+                alert(`Partida criada! Código: ${result.gameCode}. Compartilhe com um amigo.`);
+                e.target.reset();
+            } else {
+                alert(result ? result.message : 'Erro ao criar a partida.');
+            }
+            setButtonLoading(btn, false);
+        }
+        
+        async function handleFindGame(e) {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            setButtonLoading(btn, true);
+            const gameCode = document.getElementById('game-code').value.toUpperCase();
+            if (!gameCode) {
+                alert('Por favor, insira um código.');
+                setButtonLoading(btn, false);
+                return;
+            }
+            
+            const gameDetails = await apiCall(`/games/details/${gameCode}`);
+            
+            if (gameDetails && !gameDetails.message) {
+                document.getElementById('opponent-avatar').src = gameDetails.players[0].avatar;
+                document.getElementById('opponent-name').textContent = gameDetails.players[0].username;
+                document.getElementById('match-bet-amount').textContent = `${gameDetails.betAmount.toFixed(2)} MT`;
+                document.getElementById('accept-match-btn').dataset.gameCode = gameCode;
+                openModal('confirm-join-modal');
+            } else {
+                alert(gameDetails ? gameDetails.message : 'Erro ao buscar partida.');
+            }
+            setButtonLoading(btn, false);
+        }
+
+        async function acceptMatch(e) {
+            const btn = e.target;
+            setButtonLoading(btn, true);
+            const gameCode = btn.dataset.gameCode;
+            
+            const result = await apiCall('/games/join', 'POST', { gameCode });
+
+            if (result && result.status === 'active') {
+                closeModal();
+                alert('Você aceitou o desafio! O jogo vai começar.');
+                // window.location.href = `game.html?id=${result._id}`;
+            } else {
+                alert(result ? result.message : 'Não foi possível entrar na partida.');
+            }
+            setButtonLoading(btn, false);
+        }
+        
+        // --- FUNÇÕES AUXILIARES ---
+        function openModal(modalId) { document.getElementById(modalId).classList.add('active'); }
+        function closeModal() { document.querySelector('.modal.active')?.classList.remove('active'); }
+        function setButtonLoading(button, isLoading) { button.classList.toggle('loading', isLoading); button.disabled = isLoading; }
+        
+        async function apiCall(endpoint, method = 'GET', body = null) {
+            const headers = new Headers({ 'Authorization': `Bearer ${token}` });
+            const options = { method, headers };
+            if (body) {
+                headers.append('Content-Type', 'application/json');
+                options.body = JSON.stringify(body);
+            }
+            try {
+                const response = await fetch(`${API_URL}${endpoint}`, options);
+                if (response.status === 401) { logout(); return null; }
+                return response.json();
+            } catch (error) {
+                alert('Erro de conexão com o servidor.'); return null;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="pt-MZ">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Partida em Andamento - BrainSkill</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
+
+    <style>
+        :root {
+            --primary-color: #00D1FF; --bg-color: #eef3f8; --surface-color: #FFFFFF;
+            --text-primary: #0F172A; --text-secondary: #64748B; --border-color: #E2E8F0;
+            --light-square: #e2e8f0; --dark-square: #4a5568;
+            --player1-piece-color: #00D1FF; --player2-piece-color: #FFFFFF;
+            --king-crown-color: #FFD700; --highlight-selected: rgba(0, 209, 255, 0.6);
+            --highlight-valid: rgba(255, 255, 255, 0.5); --square-size: min(11vw, 75px);
+        }
+        body {
+            font-family: 'Poppins', sans-serif; background-color: var(--bg-color); color: var(--text-primary);
+            display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 15px;
+        }
+        .game-layout {
+            width: 100%; max-width: 1000px;
+            display: flex; flex-direction: column; align-items: center; gap: 20px;
+        }
+        .player-panel {
+            display: flex; align-items: center; gap: 15px;
+            background-color: var(--surface-color); padding: 10px 20px; border-radius: 15px;
+            width: 100%; max-width: calc(var(--square-size) * 8 + 10px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            transition: box-shadow 0.3s ease, border-color 0.3s ease;
+            border: 2px solid transparent;
+        }
+        .player-panel.active-turn {
+            box-shadow: 0 0 0 3px var(--primary-color), 0 8px 25px rgba(0, 209, 255, 0.2);
+            border-color: var(--primary-color);
+        }
+        .player-panel.opponent { flex-direction: row-reverse; }
+        .player-panel .avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; }
+        .player-panel .info { flex-grow: 1; }
+        .player-panel.opponent .info { text-align: right; }
+        .player-panel .username { font-weight: 600; }
+        .player-panel .bet-info { font-size: 0.9rem; color: var(--text-secondary); }
+        .player-panel .bet-info strong { color: var(--text-primary); }
+        #board-container {
+            display: grid; grid-template-columns: repeat(8, var(--square-size)); grid-template-rows: repeat(8, var(--square-size));
+            border: 5px solid var(--dark-square); box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            position: relative; background-color: var(--dark-square);
+        }
+        .square { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; position: relative; z-index: 1; }
+        .square.light { background-color: var(--light-square); }
+        .square.dark { background-color: var(--dark-square); }
+        .piece {
+            position: absolute; width: 85%; height: 85%; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            box-shadow: inset 0 2px 4px rgba(255,255,255,0.2), inset 0 -5px 6px rgba(0,0,0,0.4);
+            transition: transform 0.3s ease, box-shadow 0.2s ease, top 0.4s ease, left 0.4s ease; transform-style: preserve-3d; z-index: 2;
+        }
+        .piece.player1 { background-color: var(--player1-piece-color); }
+        .piece.player2 { background-color: var(--player2-piece-color); }
+        .piece::before { content: ''; position: absolute; left: 0; top: 0; width: 100%; height: 100%; border-radius: 50%; background: inherit; filter: brightness(0.7); transform: translateZ(-8px); }
+        .king::after { content: '♛'; color: var(--king-crown-color); font-size: calc(var(--square-size) * 0.5); -webkit-text-stroke: 1px rgba(0,0,0,0.5); position: absolute; transform: translateZ(1px); }
+        .selected { transform: scale(1.1) translateY(-10px); box-shadow: 0 0 0 5px var(--highlight-selected), 0 15px 20px rgba(0,0,0,0.3); z-index: 3; }
+        .valid-move-highlight { width: 30%; height: 30%; background-color: var(--highlight-valid); border: 1px solid rgba(255,255,255,0.7); border-radius: 50%; pointer-events: none; z-index: 2; }
+        .modal { display: none; position: fixed; z-index: 1001; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; }
+        .modal.active { display: flex; }
+        .modal-content { background-color: var(--surface-color); padding: 40px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .modal-content iconify-icon { font-size: 4rem; margin-bottom: 20px; }
+        .modal-content h3 { font-size: 1.8rem; margin-bottom: 10px; }
+        .modal-content p { color: var(--text-secondary); margin-bottom: 30px; }
+        .btn { padding: 12px 24px; border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer; border: none; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="game-layout">
+        <div class="player-panel opponent" id="opponent-panel">
+            <img class="avatar" id="opponent-avatar" src="https://via.placeholder.com/100">
+            <div class="info">
+                <div class="username" id="opponent-username">Aguardando...</div>
+                <div class="bet-info">Aposta: <strong id="opponent-bet">0 MT</strong></div>
+            </div>
+        </div>
+        <div id="board-container"></div>
+        <div class="player-panel" id="me-panel">
+            <img class="avatar" id="me-avatar" src="https://via.placeholder.com/100">
+            <div class="info">
+                <div class="username" id="me-username">Você</div>
+                <div class="bet-info">Aposta: <strong id="me-bet">0 MT</strong></div>
+            </div>
+        </div>
+    </div>
+    <div id="end-game-modal" class="modal">
+        <div class="modal-content">
+            <iconify-icon id="end-game-icon"></iconify-icon>
+            <h3 id="end-game-title"></h3>
+            <p id="end-game-message"></p>
+            <a href="dashboard.html" class="btn" style="background-color: var(--primary-color); color: white;">Voltar ao Painel</a>
+        </div>
+    </div>
+
+    <script>
+        // --- VARIÁVEIS GLOBAIS ---
+        const API_URL = 'https://brainskill.onrender.com/api'; 
+        const token = localStorage.getItem('token');
+        const loggedInUser = JSON.parse(localStorage.getItem('user'));
+        
+        const boardContainer = document.getElementById('board-container');
+        let gameData, gameId, localBoard, myPlayerNumber, pollingInterval;
+        const P1_PEON = 1, P2_PEON = 2, P1_KING = 11, P2_KING = 22;
+        let selectedPiece = null, isMidCapture = false, mandatoryCaptures = [];
+
+        // --- INICIALIZAÇÃO E COMUNICAÇÃO COM API ---
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!token || !loggedInUser) { window.location.href = 'login.html'; return; }
+            const urlParams = new URLSearchParams(window.location.search);
+            gameId = urlParams.get('id');
+            if (!gameId) { alert('ID da partida não encontrado.'); window.location.href = 'dashboard.html'; return; }
+            
+            fetchGameData(true); // Primeira busca, força a renderização
+            pollingInterval = setInterval(fetchGameData, 5000);
+        });
+
+        async function fetchGameData(forceRender = false) {
+            const data = await apiCall(`/games/${gameId}`);
+            if (!data || data.message) {
+                alert(data ? data.message : "Erro ao carregar a partida. Voltando ao dashboard.");
+                clearInterval(pollingInterval); window.location.href = 'dashboard.html'; return;
+            }
+            if (forceRender || JSON.stringify(gameData.boardState) !== JSON.stringify(data.boardState) || gameData.status !== data.status) {
+                gameData = data;
+                localBoard = JSON.parse(JSON.stringify(gameData.boardState));
+                myPlayerNumber = gameData.players.findIndex(p => p._id === loggedInUser.id) + 1;
+                updateUI();
+                renderBoard();
+                checkGameState();
+            }
+        }
+
+        function updateUI() {
+            const me = gameData.players[myPlayerNumber - 1];
+            const opponent = gameData.players[myPlayerNumber === 1 ? 1 : 0];
+            
+            document.getElementById('me-avatar').src = me.avatar;
+            document.getElementById('me-username').textContent = `${me.username} (Você)`;
+            document.getElementById('me-bet').textContent = `${gameData.betAmount.toFixed(2)} MT`;
+            
+            if (opponent) {
+                document.getElementById('opponent-avatar').src = opponent.avatar;
+                document.getElementById('opponent-username').textContent = opponent.username;
+                document.getElementById('opponent-bet').textContent = `${gameData.betAmount.toFixed(2)} MT`;
+            }
+            document.getElementById('me-panel').classList.toggle('active-turn', gameData.currentPlayer === loggedInUser.id);
+            document.getElementById('opponent-panel').classList.toggle('active-turn', gameData.currentPlayer !== loggedInUser.id);
+        }
+
+        // --- LÓGICA DE JOGO INTEGRADA ---
+        function renderBoard() {
+            boardContainer.innerHTML = '';
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    const square = document.createElement('div');
+                    square.classList.add('square', (r + c) % 2 === 0 ? 'light' : 'dark');
+                    square.dataset.row = r; square.dataset.col = c;
+                    boardContainer.appendChild(square);
+                    const pieceType = localBoard[r][c];
+                    if (pieceType !== 0) createPieceElement(r, c, pieceType);
+                }
+            }
+            addEventListeners();
+        }
+
+        function createPieceElement(r, c, pieceType) {
+            const piece = document.createElement('div');
+            piece.classList.add('piece');
+            piece.dataset.row = r; piece.dataset.col = c;
+            const piecePlayer = (pieceType === P1_PEON || pieceType === P1_KING) ? 1 : 2;
+            piece.classList.add(`player${piecePlayer}`);
+            if (pieceType === P1_KING || pieceType === P2_KING) piece.classList.add('king');
+            const squareSize = boardContainer.firstChild.offsetWidth;
+            piece.style.top = `${r * squareSize + (squareSize * 0.075)}px`;
+            piece.style.left = `${c * squareSize + (squareSize * 0.075)}px`;
+            piece.style.width = `${squareSize * 0.85}px`; piece.style.height = `${squareSize * 0.85}px`;
+            boardContainer.appendChild(piece);
+        }
+
+        function addEventListeners() {
+            boardContainer.onclick = (e) => {
+                if (gameData.currentPlayer !== loggedInUser.id) return;
+                const target = e.target.closest('.square, .piece');
+                if (target) handleSquareClick(target.dataset.row, target.dataset.col);
+            };
+        }
+        
+        function handleSquareClick(rowStr, colStr) {
+            const row = parseInt(rowStr), col = parseInt(colStr);
+            const pieceEl = document.querySelector(`.piece[data-row='${row}'][data-col='${col}']`);
+            if (selectedPiece) {
+                const isValidMove = findValidMove(selectedPiece.row, selectedPiece.col, row, col);
+                if (isValidMove) makeMove(selectedPiece.row, selectedPiece.col, row, col);
+                clearSelection();
+            } else if (pieceEl) {
+                const pieceType = localBoard[row][col];
+                const piecePlayer = (pieceType === P1_PEON || pieceType === P1_KING) ? 1 : 2;
+                if (piecePlayer === myPlayerNumber) {
+                    if (isMidCapture) return;
+                    if (mandatoryCaptures.length > 0 && !mandatoryCaptures.some(m => m.from.r === row && m.from.c === col)) {
+                        alert('Captura obrigatória! Você deve jogar com outra peça.'); return;
+                    }
+                    selectPiece(pieceEl, row, col);
+                }
+            }
+        }
+
+        function selectPiece(element, row, col) {
+            clearSelection();
+            selectedPiece = { element, row, col };
+            element.classList.add('selected');
+            highlightValidMoves(row, col);
+        }
+
+        function clearSelection() {
+            if (selectedPiece && selectedPiece.element) selectedPiece.element.classList.remove('selected');
+            selectedPiece = null;
+            document.querySelectorAll('.valid-move-highlight').forEach(h => h.remove());
+        }
+
+        function highlightValidMoves(row, col) {
+            let moves = mandatoryCaptures.length > 0 ? mandatoryCaptures.filter(m => m.from.r === row && m.from.c === col) : findSimpleMoves(row, col);
+            moves.forEach(move => {
+                const highlight = document.createElement('div');
+                highlight.classList.add('valid-move-highlight');
+                const targetSquare = document.querySelector(`.square[data-row='${move.to.r}'][data-col='${move.to.c}']`);
+                if (targetSquare) targetSquare.appendChild(highlight);
+            });
+        }
+        
+        async function makeMove(fromR, fromC, toR, toC) {
+            const pieceEl = selectedPiece.element;
+            const squareSize = boardContainer.firstChild.offsetWidth;
+            pieceEl.style.top = `${toR * squareSize + (squareSize * 0.075)}px`;
+            pieceEl.style.left = `${toC * squareSize + (squareSize * 0.075)}px`;
+            
+            boardContainer.onclick = null;
+            clearSelection();
+            
+            const result = await apiCall(`/games/${gameId}/move`, 'POST', { from: { r: fromR, c: fromC }, to: { r: toR, c: toC } });
+
+            if (result && !result.message) {
+                // A atualização virá do polling, mas podemos animar localmente se quisermos
+                fetchGameData(true); // Força a busca e renderização imediata
+            } else {
+                alert(result ? result.message : "Erro ao registrar jogada. O jogo será sincronizado.");
+                fetchGameData(true);
+            }
+        }
+        
+        function checkGameState() {
+            if (gameData.status === 'finished') {
+                endGame();
+                return;
+            }
+            if (gameData.currentPlayer === loggedInUser.id) {
+                findAllMandatoryCaptures();
+            }
+        }
+        
+        function endGame() {
+            clearInterval(pollingInterval);
+            const didIWin = gameData.winner === loggedInUser.id;
+            document.getElementById('end-game-icon').setAttribute('icon', didIWin ? 'mdi:trophy' : 'mdi:emoticon-sad-outline');
+            document.getElementById('end-game-icon').style.color = didIWin ? 'var(--king-crown-color)' : 'var(--text-secondary)';
+            document.getElementById('end-game-title').textContent = didIWin ? 'Você Venceu!' : 'Você Perdeu!';
+            const prize = (gameData.betAmount * 2 * 0.9).toFixed(2);
+            document.getElementById('end-game-message').textContent = didIWin ? `Parabéns! Você ganhou ${prize} MT.` : 'Mais sorte na próxima vez.';
+            document.getElementById('end-game-modal').classList.add('active');
+        }
+
+        // --- LÓGICA DE REGRAS (ADAPTADA) ---
+        function findValidMove(fromR, fromC, toR, toC) {
+            const moves = mandatoryCaptures.length > 0 ? mandatoryCaptures.filter(m => m.from.r === fromR && m.from.c === fromC) : findSimpleMoves(fromR, fromC);
+            return moves.find(m => m.to.r === toR && m.to.c === toC);
+        }
+        function findAllMandatoryCaptures() {
+            let allCapturePaths = [];
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    const pieceType = localBoard[r][c];
+                    if (pieceType === 0) continue;
+                    const piecePlayer = (pieceType === P1_PEON || pieceType === P1_KING) ? 1 : 2;
+                    if (piecePlayer === myPlayerNumber) {
+                        allCapturePaths.push(...findCapturePathsForPiece(r, c));
+                    }
+                }
+            }
+            if (allCapturePaths.length === 0) { mandatoryCaptures = []; return; }
+            const maxLength = Math.max(...allCapturePaths.map(p => p.captures), 0);
+            mandatoryCaptures = allCapturePaths.filter(p => p.captures === maxLength);
+        }
+        function findCapturePathsForPiece(r, c) {
+            const paths = [];
+            function find(pathR, pathC, currentPath, capturedPieces) {
+                const isKing = localBoard[pathR][pathC] === P1_KING || localBoard[pathR][pathC] === P2_KING;
+                const directions = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
+                let moved = false;
+                for (const [dr, dc] of directions) {
+                    for (let i = 1; i < 8; i++) {
+                        const midR = pathR + dr * i, midC = pathC + dc * i;
+                        const toR = pathR + dr * (i + 1), toC = pathC + dc * (i + 1);
+                        if (!isKing && i > 1) break;
+                        if (isValidCapture(pathR, pathC, midR, midC, toR, toC) && !capturedPieces.has(`${midR},${midC}`)) {
+                             moved = true;
+                             if(isKing) {
+                                for (let j = 1; j < 8; j++) {
+                                    const landR = midR + dr * j, landC = midC + dc * j;
+                                    if(landR < 0 || landR >= 8 || landC < 0 || landC >= 8 || (localBoard[landR][landC] !== 0 && (landR !== pathR || landC !== pathC))) break;
+                                    const newCaptured = new Set(capturedPieces); newCaptured.add(`${midR},${midC}`);
+                                    find(landR, landC, [...currentPath, { r: landR, c: landC, captured: { r: midR, c: midC } }], newCaptured);
+                                }
+                             } else {
+                                const newCaptured = new Set(capturedPieces); newCaptured.add(`${midR},${midC}`);
+                                find(toR, toC, [...currentPath, { r: toR, c: toC, captured: { r: midR, c: midC } }], newCaptured);
+                             }
+                        } else if (localBoard[midR]?.[midC] !== undefined && localBoard[midR]?.[midC] !== 0) break;
+                    }
+                }
+                if (!moved && currentPath.length > 1) paths.push({ from: currentPath[0], to: currentPath[1], isCapture: true, captures: currentPath.length - 1, captured: currentPath[1].captured });
+            }
+            find(r, c, [{ r, c }], new Set()); return paths;
+        }
+        function findSimpleMoves(r, c) {
+            const moves = [], pieceType = localBoard[r][c];
+            if (pieceType === P1_PEON || pieceType === P2_PEON) {
+                const forwardDir = (myPlayerNumber === 1) ? -1 : 1;
+                [[forwardDir, -1], [forwardDir, 1]].forEach(([dr, dc]) => {
+                    const toR = r + dr, toC = c + dc;
+                    if (isValidSimpleMove(toR, toC)) moves.push({ from: { r, c }, to: { r: toR, c: toC }, isCapture: false });
+                });
+            } else if (pieceType === P1_KING || pieceType === P2_KING) {
+                [[-1, -1], [-1, 1], [1, -1], [1, 1]].forEach(([dr, dc]) => {
+                    for (let i = 1; i < 8; i++) {
+                        const toR = r + dr * i, toC = c + dc * i;
+                        if (!isValidSimpleMove(toR, toC)) break;
+                        moves.push({ from: { r, c }, to: { r: toR, c: toC }, isCapture: false });
+                    }
+                });
+            }
+            return moves;
+        }
+        function isValidCapture(fromR, fromC, midR, midC, toR, toC) {
+            if (toR < 0 || toR >= 8 || toC < 0 || toC >= 8 || localBoard[toR][toC] !== 0) return false;
+            if (midR < 0 || midR >= 8 || midC < 0 || midC >= 8) return false;
+            const pieceAtMid = localBoard[midR][midC];
+            const opponentPlayer = (myPlayerNumber === 1) ? 2 : 1;
+            const opponentPiece = opponentPlayer === 1 ? P1_PEON : P2_PEON;
+            const opponentKing = opponentPlayer === 1 ? P1_KING : P2_KING;
+            return pieceAtMid === opponentPiece || pieceAtMid === opponentKing;
+        }
+        function isValidSimpleMove(r, c) { return r >= 0 && r < 8 && c >= 0 && c < 8 && localBoard[r][c] === 0; }
+        
+        async function apiCall(endpoint, method = 'GET', body = null) {
+            const headers = new Headers({ 'Authorization': `Bearer ${token}` });
+            const options = { method, headers };
+            if (body) { headers.append('Content-Type', 'application/json'); options.body = JSON.stringify(body); }
+            try {
+                const response = await fetch(`${API_URL}${endpoint}`, options);
+                if (response.status === 401) { window.location.href = 'login.html'; return null; }
+                return response.json();
+            } catch (error) { console.error('API Call Error:', error); return null; }
+        }
+    </script>
+</body>
+</html>

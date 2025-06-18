@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="pt-MZ">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Administração - BrainSkill</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
+
+    <style>
+        :root {
+            --primary-color: #00D1FF; --primary-color-dark: #00AEEF; --bg-color: #F8FAFC; --surface-color: #FFFFFF;
+            --text-primary: #0F172A; --text-secondary: #64748B; --border-color: #E2E8F0;
+            --success-color: #38A169; --error-color: #E53E3E; --pending-color: #F59E0B;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Poppins', sans-serif; background-color: var(--bg-color); color: var(--text-primary); }
+
+        .admin-layout { display: flex; min-height: 100vh; }
+        
+        .sidebar { width: 260px; background-color: #1E293B; color: #E2E8F0; padding: 30px 20px; display: flex; flex-direction: column; }
+        .sidebar .logo { font-weight: 700; font-size: 2rem; color: #FFF; text-decoration: none; text-align: center; margin-bottom: 40px; }
+        .sidebar .logo span { color: var(--primary-color); }
+        .sidebar-nav { flex-grow: 1; }
+        .sidebar-nav a {
+            display: flex; align-items: center; gap: 15px; padding: 15px; text-decoration: none;
+            color: #94A3B8; border-radius: 10px; margin-bottom: 10px; font-weight: 500;
+        }
+        .sidebar-nav a.active, .sidebar-nav a:hover { background-color: #334155; color: #FFF; }
+        .sidebar-nav a .icon { font-size: 1.4rem; }
+
+        .main-content { flex: 1; padding: 30px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .header h2 { font-size: 1.8rem; }
+        .header #logout-btn { background: none; border: none; cursor: pointer; color: var(--text-secondary); font-size: 1.8rem; }
+
+        .view { display: none; animation: fadeIn 0.5s ease; }
+        .view.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Componentes */
+        .card { background-color: var(--surface-color); padding: 25px; border-radius: 15px; border: 1px solid var(--border-color); box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { text-align: center; }
+        .stat-card .value { font-size: 2.5rem; font-weight: 700; color: var(--primary-color); }
+        .stat-card .label { font-size: 1rem; color: var(--text-secondary); }
+        
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid var(--border-color); }
+        th { font-weight: 600; color: var(--text-secondary); font-size: 0.9rem; text-transform: uppercase; }
+        td .user-info { display: flex; align-items: center; gap: 10px; }
+        td .user-info img { width: 40px; height: 40px; border-radius: 50%; }
+        td .status { font-weight: 600; padding: 4px 10px; border-radius: 50px; font-size: 0.8rem; }
+        .status.approved { background-color: rgba(56, 161, 105, 0.1); color: var(--success-color); }
+        .status.pending { background-color: rgba(245, 158, 11, 0.1); color: var(--pending-color); }
+        .status.denied { background-color: rgba(229, 62, 62, 0.1); color: var(--error-color); }
+        .btn { padding: 8px 16px; border-radius: 8px; font-size: 0.9rem; font-weight: 600; cursor: pointer; border: none; }
+        .btn-success { background-color: var(--success-color); color: white; }
+        .btn-danger { background-color: var(--error-color); color: white; }
+        .btn-block { background-color: #fef08a; color: #a16207; }
+        .btn-unblock { background-color: #a7f3d0; color: #047857; }
+        
+        .input-field { width: 100%; background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px 15px; font-size: 1rem; }
+    </style>
+</head>
+<body>
+    <div class="admin-layout">
+        <aside class="sidebar">
+            <a href="index.html" class="logo">Brain<span>Skill</span></a>
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-link active" data-view="dashboard-view"><iconify-icon class="icon" icon="mdi:view-dashboard"></iconify-icon><span>Dashboard</span></a>
+                <a href="#" class="nav-link" data-view="users-view"><iconify-icon class="icon" icon="mdi:account-group"></iconify-icon><span>Usuários</span></a>
+                <a href="#" class="nav-link" data-view="transactions-view"><iconify-icon class="icon" icon="mdi:swap-horizontal-bold"></iconify-icon><span>Transações</span></a>
+                <a href="#" class="nav-link" data-view="settings-view"><iconify-icon class="icon" icon="mdi:cog"></iconify-icon><span>Configurações</span></a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <header class="header">
+                <h2 id="view-title">Dashboard</h2>
+                <button id="logout-btn" title="Sair"><iconify-icon icon="mdi:logout"></iconify-icon></button>
+            </header>
+
+            <!-- VIEW: DASHBOARD -->
+            <div id="dashboard-view" class="view active">
+                <div class="stats-grid card">
+                    <div class="stat-card">
+                        <div class="value" id="stat-total-users">0</div>
+                        <div class="label">Total de Usuários</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="value" id="stat-total-deposited">0 MT</div>
+                        <div class="label">Total Depositado</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="value" id="stat-active-games">0</div>
+                        <div class="label">Partidas Ativas</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="value" id="stat-games-played">0</div>
+                        <div class="label">Partidas Finalizadas</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: USUÁRIOS -->
+            <div id="users-view" class="view">
+                <div class="card table-container">
+                    <table>
+                        <thead>
+                            <tr><th>Usuário</th><th>Email</th><th>Saldo</th><th>Status</th><th>Ações</th></tr>
+                        </thead>
+                        <tbody id="users-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- VIEW: TRANSAÇÕES -->
+            <div id="transactions-view" class="view">
+                <div class="card table-container">
+                     <table>
+                        <thead>
+                            <tr><th>Usuário</th><th>Tipo</th><th>Método</th><th>Valor</th><th>Status</th><th>Ações</th></tr>
+                        </thead>
+                        <tbody id="transactions-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- VIEW: CONFIGURAÇÕES -->
+            <div id="settings-view" class="view">
+                 <div class="card">
+                    <h3>Configurações da Plataforma</h3>
+                    <form id="settings-form">
+                        <!-- Formulário de configurações será populado aqui -->
+                    </form>
+                 </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const API_URL = 'https://brainskill.onrender.com/api'; 
+        const token = localStorage.getItem('token');
+        const user = JSON.parse(localStorage.getItem('user'));
+
+        // --- INICIALIZAÇÃO E AUTENTICAÇÃO DE ADMIN ---
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!token || !user || user.role !== 'admin') {
+                alert('Acesso negado. Você precisa ser um administrador.');
+                window.location.href = 'login.html';
+                return;
+            }
+            setupEventListeners();
+            showView('dashboard-view');
+        });
+
+        // --- NAVEGAÇÃO SPA E CARREGAMENTO DE DADOS ---
+        function showView(viewId) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+            document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+            document.querySelector(`[data-view="${viewId}"]`).classList.add('active');
+            document.getElementById('view-title').textContent = document.querySelector(`[data-view="${viewId}"] span`).textContent;
+            
+            if (viewId === 'dashboard-view') loadDashboardStats();
+            if (viewId === 'users-view') loadUsers();
+            if (viewId === 'transactions-view') loadTransactions();
+            if (viewId === 'settings-view') loadSettings();
+        }
+
+        // --- CARREGAMENTO DE DADOS DAS VIEWS ---
+        async function loadDashboardStats() {
+            const stats = await apiCall('/admin/stats');
+            if (stats) {
+                document.getElementById('stat-total-users').textContent = stats.totalUsers;
+                document.getElementById('stat-total-deposited').textContent = `${stats.totalDeposited.toFixed(2)} MT`;
+                document.getElementById('stat-active-games').textContent = stats.activeGames;
+                document.getElementById('stat-games-played').textContent = stats.totalGamesPlayed;
+            }
+        }
+        async function loadUsers() {
+            const users = await apiCall('/admin/users');
+            const tbody = document.getElementById('users-table-body');
+            tbody.innerHTML = '';
+            if (users) {
+                users.forEach(u => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><div class="user-info"><img src="${u.avatar.url}" alt="avatar"><span>${u.username}</span></div></td>
+                        <td>${u.email}</td>
+                        <td>${u.balance.toFixed(2)} MT</td>
+                        <td><span class="status ${u.isBlocked ? 'denied' : 'approved'}">${u.isBlocked ? 'Bloqueado' : 'Ativo'}</span></td>
+                        <td><button class="btn ${u.isBlocked ? 'btn-unblock' : 'btn-block'}" onclick="toggleBlockUser('${u._id}', ${u.isBlocked})">${u.isBlocked ? 'Desbloquear' : 'Bloquear'}</button></td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+        }
+        async function loadTransactions() {
+            const transactions = await apiCall('/admin/transactions/pending');
+            const tbody = document.getElementById('transactions-table-body');
+            tbody.innerHTML = '';
+            if (transactions) {
+                transactions.forEach(t => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${t.user.username}</td>
+                        <td>${t.type === 'deposit' ? 'Depósito' : 'Levantamento'}</td>
+                        <td>${t.method} (${t.phoneNumber})</td>
+                        <td>${t.amount.toFixed(2)} MT</td>
+                        <td><span class="status pending">Pendente</span></td>
+                        <td>
+                            <button class="btn btn-success" onclick="processTransaction('${t._id}', 'approved')">Aprovar</button>
+                            <button class="btn btn-danger" onclick="processTransaction('${t._id}', 'denied')">Negar</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+        }
+        async function loadSettings() {
+            const settings = await apiCall('/admin/settings');
+            const form = document.getElementById('settings-form');
+            form.innerHTML = '';
+            if (settings) {
+                Object.keys(settings).forEach(key => {
+                    if (key === '_id' || key === '__v' || key === 'singleton') return;
+                    form.innerHTML += `
+                        <div class="input-group">
+                            <label for="setting-${key}">${key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</label>
+                            <input type="text" id="setting-${key}" name="${key}" value="${settings[key]}" class="input-field">
+                        </div>
+                    `;
+                });
+                form.innerHTML += `<button type="submit" class="btn btn-primary">Salvar Configurações</button>`;
+                form.addEventListener('submit', saveSettings);
+            }
+        }
+
+        // --- AÇÕES DO ADMIN ---
+        async function toggleBlockUser(userId, isBlocked) {
+            const action = isBlocked ? 'desbloquear' : 'bloquear';
+            if (confirm(`Tem certeza que deseja ${action} este usuário?`)) {
+                await apiCall(`/admin/users/${userId}/toggle-block`, 'PATCH');
+                loadUsers();
+            }
+        }
+        async function processTransaction(transactionId, status) {
+            const notes = prompt(`Adicionar uma nota para esta ação (${status})?`, 'Processado pelo admin.');
+            if (notes !== null) {
+                await apiCall(`/admin/transactions/${transactionId}/process`, 'POST', { status, adminNotes: notes });
+                loadTransactions();
+            }
+        }
+        async function saveSettings(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const settingsData = Object.fromEntries(formData.entries());
+            await apiCall('/admin/settings', 'PUT', settingsData);
+            alert('Configurações salvas com sucesso!');
+        }
+
+        // --- FUNÇÕES AUXILIARES ---
+        function setupEventListeners() {
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', (e) => { e.preventDefault(); showView(link.dataset.view); });
+            });
+            document.getElementById('logout-btn').addEventListener('click', () => {
+                localStorage.clear(); window.location.href = 'login.html';
+            });
+        }
+        async function apiCall(endpoint, method = 'GET', body = null) {
+            const headers = new Headers({ 'Authorization': `Bearer ${token}` });
+            const options = { method, headers };
+            if (body) { headers.append('Content-Type', 'application/json'); options.body = JSON.stringify(body); }
+            try {
+                const response = await fetch(`${API_URL}${endpoint}`, options);
+                if (response.status === 401 || response.status === 403) {
+                    alert('Acesso negado.'); window.location.href = 'login.html'; return null;
+                }
+                if (response.status === 204 || response.headers.get("content-length") === "0") return {};
+                return response.json();
+            } catch (error) { console.error('API Call Error:', error); return null; }
+        }
+    </script>
+</body>
+</html>

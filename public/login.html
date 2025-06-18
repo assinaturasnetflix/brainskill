@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="pt-MZ">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - BrainSkill</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- 1. CONFIGURAÇÃO GERAL E PALETA DE CORES --- */
+        :root {
+            --primary-color: #00D1FF;
+            --primary-color-dark: #00AEEF;
+            --bg-color: #F8FAFC;
+            --surface-color: #FFFFFF;
+            --text-primary: #0F172A;
+            --text-secondary: #64748B;
+            --border-color: #E2E8F0;
+            --success-color: #38A169;
+            --error-color: #E53E3E;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        /* --- 2. CONTAINER E CARTÃO DE LOGIN --- */
+        .login-container {
+            width: 100%;
+            max-width: 420px;
+            background-color: var(--surface-color);
+            padding: 50px 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border-color);
+            animation: fadeIn 0.6s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* --- 3. ELEMENTOS DE TEXTO E LOGO --- */
+        .header { text-align: center; margin-bottom: 30px; }
+        .header .logo { font-weight: 700; font-size: 2.5rem; color: var(--text-primary); text-decoration: none; }
+        .header .logo span { color: var(--primary-color); }
+        .header h2 { font-size: 1.8rem; margin-top: 10px; }
+        .header p { color: var(--text-secondary); margin-top: 5px; }
+        
+        .form-link {
+            color: var(--primary-color-dark);
+            text-decoration: none;
+            font-weight: 500;
+            cursor: pointer;
+            transition: text-decoration 0.3s ease;
+        }
+        .form-link:hover { text-decoration: underline; }
+        
+        .footer-links { text-align: center; margin-top: 25px; font-size: 0.9rem; color: var(--text-secondary); }
+
+        /* --- 4. FORMULÁRIOS E INPUTS --- */
+        form { display: flex; flex-direction: column; }
+        .input-group { position: relative; margin-bottom: 20px; }
+        .input-group .icon { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; color: var(--text-secondary); transition: color 0.3s ease; }
+        .input-field { width: 100%; background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px; padding: 15px 15px 15px 50px; color: var(--text-primary); font-size: 1rem; font-family: 'Poppins', sans-serif; transition: all 0.3s ease; }
+        .input-field:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(0, 209, 255, 0.2); }
+        .input-field:focus ~ .icon { color: var(--primary-color); }
+
+        /* --- NOVO ESTILO PARA O LINK DE RECUPERAÇÃO --- */
+        .password-options {
+            text-align: right;
+            margin-top: -10px; /* Puxa para mais perto do campo de senha */
+            margin-bottom: 20px;
+        }
+        .password-options .form-link {
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        /* --- 5. BOTÃO --- */
+        .btn { width: 100%; padding: 15px; border-radius: 12px; font-size: 1.1rem; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s ease-in-out; position: relative; display: flex; align-items: center; justify-content: center; background-color: var(--primary-color); color: #FFF; }
+        .btn:hover { background-color: var(--primary-color-dark); transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0, 209, 255, 0.25); }
+        .btn .spinner { position: absolute; width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.5); border-top-color: #FFF; border-radius: 50%; display: none; animation: spin 1s linear infinite; }
+        .btn.loading .spinner { display: block; }
+        .btn .btn-text { transition: opacity 0.2s ease; }
+        .btn.loading .btn-text { opacity: 0; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* --- 6. MENSAGENS DE FEEDBACK --- */
+        .form-message { text-align: center; padding: 12px; border-radius: 8px; font-size: 0.9rem; display: none; margin-bottom: 20px; }
+        .form-message.error { display: block; background-color: rgba(229, 62, 62, 0.1); color: var(--error-color); }
+        .form-message.success { display: block; background-color: rgba(56, 161, 105, 0.1); color: var(--success-color); }
+    </style>
+</head>
+<body>
+
+    <!-- Ícones SVG para reutilização -->
+    <svg width="0" height="0" style="position:absolute">
+        <defs>
+            <symbol id="icon-email" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></symbol>
+            <symbol id="icon-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></symbol>
+        </defs>
+    </svg>
+
+    <div class="login-container">
+        <div class="header">
+            <a href="index.html" class="logo">Brain<span>Skill</span></a>
+            <h2>Bem-vindo de volta!</h2>
+            <p>Entre para desafiar seus oponentes.</p>
+        </div>
+        
+        <div id="login-message" class="form-message"></div>
+
+        <form id="login-form">
+            <div class="input-group">
+                <input type="email" id="login-email" class="input-field" placeholder="Seu email" required>
+                <svg class="icon"><use xlink:href="#icon-email"/></svg>
+            </div>
+
+            <div class="input-group">
+                <input type="password" id="login-password" class="input-field" placeholder="Sua senha" required>
+                <svg class="icon"><use xlink:href="#icon-lock"/></svg>
+            </div>
+            
+            <!-- ⭐ ATUALIZAÇÃO AQUI ⭐ -->
+            <div class="password-options">
+                <a href="forgot-password.html" class="form-link">Esqueceu-se da senha?</a>
+            </div>
+            
+            <button type="submit" class="btn">
+                <span class="btn-text">Entrar</span>
+                <div class="spinner"></div>
+            </button>
+        </form>
+
+        <div class="footer-links">
+            <p>Não tem uma conta? <a href="register.html" class="form-link">Registre-se aqui</a></p>
+        </div>
+    </div>
+
+    <script>
+        // --- JAVASCRIPT (permanece o mesmo) ---
+        const API_URL = 'https://brainskill.onrender.com/api'; 
+        
+        const loginForm = document.getElementById('login-form');
+        const loginMessage = document.getElementById('login-message');
+        const loginButton = loginForm.querySelector('button');
+
+        function setButtonLoading(isLoading) {
+            loginButton.classList.toggle('loading', isLoading);
+            loginButton.disabled = isLoading;
+        }
+
+        function showMessage(message, isError = true) {
+            loginMessage.textContent = message;
+            loginMessage.className = 'form-message';
+            loginMessage.classList.add(isError ? 'error' : 'success');
+        }
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            showMessage('', false);
+            setButtonLoading(true);
+            
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            
+            try {
+                const response = await fetch(`${API_URL}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    showMessage('Login bem-sucedido! Redirecionando para o painel...', false);
+                    setTimeout(() => {
+                        window.location.href = 'dashboard.html';
+                    }, 1500);
+                } else {
+                    showMessage(data.message || 'Ocorreu um erro. Tente novamente.');
+                    setButtonLoading(false);
+                }
+            } catch (error) {
+                console.error("Erro de conexão:", error);
+                showMessage('Erro de conexão com o servidor. Verifique sua internet.');
+                setButtonLoading(false);
+            }
+        });
+    </script>
+</body>
+</html>

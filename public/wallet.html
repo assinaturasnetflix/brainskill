@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="pt-MZ">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minha Carteira - BrainSkill</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- ⭐ Importação da biblioteca de ícones Iconify ⭐ -->
+    <script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
+
+    <style>
+        :root {
+            --primary-color: #00D1FF; --primary-color-dark: #00AEEF; --bg-color: #F8FAFC; --surface-color: #FFFFFF;
+            --text-primary: #0F172A; --text-secondary: #64748B; --border-color: #E2E8F0;
+            --success-color: #38A169; --error-color: #E53E3E; --pending-color: #F59E0B;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Poppins', sans-serif; background-color: var(--bg-color); color: var(--text-primary); }
+
+        .container { max-width: 900px; margin: 0 auto; padding: 30px 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
+        .header .logo { font-weight: 700; font-size: 1.8rem; color: var(--text-primary); text-decoration: none; }
+        .header .logo span { color: var(--primary-color); }
+        .btn { padding: 12px 24px; border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer; border: none; text-decoration: none; transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-secondary { background: var(--surface-color); color: var(--text-primary); border: 1px solid var(--border-color); }
+        .btn-secondary:hover { background-color: var(--bg-color); }
+        .btn-primary { background-color: var(--primary-color); color: #FFF; }
+        .btn-primary:hover { background-color: var(--primary-color-dark); }
+        
+        .balance-card {
+            background: linear-gradient(45deg, #0F172A, #1E293B);
+            color: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .balance-card .label { font-size: 1rem; opacity: 0.8; margin-bottom: 10px; }
+        .balance-card .amount { font-size: 3rem; font-weight: 700; letter-spacing: -1px; }
+        
+        .actions { display: flex; gap: 20px; justify-content: center; margin-bottom: 40px; }
+        .actions .btn { width: 100%; justify-content: center; padding: 15px; }
+        @media (min-width: 600px) { .actions .btn { width: auto; } }
+
+        .transactions-section h2 { font-size: 1.5rem; margin-bottom: 20px; }
+        .transaction-list { list-style: none; }
+        .transaction-item {
+            display: flex; align-items: center; gap: 15px;
+            background-color: var(--surface-color);
+            padding: 20px; border-radius: 12px; margin-bottom: 15px;
+            border: 1px solid var(--border-color);
+        }
+        .transaction-item .icon-container { font-size: 2rem; }
+        .transaction-item.deposit .icon-container { color: var(--success-color); }
+        .transaction-item.withdrawal .icon-container { color: var(--error-color); }
+        .transaction-item .details { flex-grow: 1; }
+        .transaction-item .details .type { font-weight: 600; }
+        .transaction-item .details .date { font-size: 0.85rem; color: var(--text-secondary); }
+        .transaction-item .status-amount { text-align: right; }
+        .transaction-item .status-amount .amount { font-weight: 700; font-size: 1.1rem; }
+        .transaction-item .status-amount .status { font-size: 0.8rem; font-weight: 600; padding: 3px 8px; border-radius: 50px; }
+        .status.approved { background-color: rgba(56, 161, 105, 0.1); color: var(--success-color); }
+        .status.pending { background-color: rgba(245, 158, 11, 0.1); color: var(--pending-color); }
+        .status.denied { background-color: rgba(229, 62, 62, 0.1); color: var(--error-color); }
+        
+        /* --- MODAIS --- */
+        .modal {
+            display: none; position: fixed; z-index: 1001; left: 0; top: 0;
+            width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5);
+            justify-content: center; align-items: center;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background-color: var(--surface-color); padding: 30px; border-radius: 15px;
+            width: 90%; max-width: 450px; position: relative;
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn { from { transform: translateY(-30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .modal-close { position: absolute; top: 15px; right: 15px; font-size: 1.5rem; cursor: pointer; color: var(--text-secondary); }
+        .modal-content h3 { margin-bottom: 20px; font-size: 1.3rem; }
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; font-weight: 500; margin-bottom: 8px; font-size: 0.9rem; }
+        .input-field { width: 100%; background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px 15px; font-size: 1rem; }
+        .payment-instructions { background-color: var(--bg-color); padding: 15px; border-radius: 10px; font-size: 0.9rem; line-height: 1.6; margin-top: 20px; }
+        .form-message { text-align: center; padding: 12px; border-radius: 8px; font-size: 0.9rem; display: none; margin-bottom: 20px; }
+        .form-message.error { display: block; background-color: rgba(229, 62, 62, 0.1); color: var(--error-color); }
+        .form-message.success { display: block; background-color: rgba(56, 161, 105, 0.1); color: var(--success-color); }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header class="header">
+            <a href="dashboard.html" class="logo">Brain<span>Skill</span></a>
+            <a href="dashboard.html" class="btn btn-secondary">
+                <iconify-icon icon="mdi:arrow-left"></iconify-icon>
+                Voltar ao Painel
+            </a>
+        </header>
+
+        <main>
+            <div class="balance-card">
+                <div class="label">Saldo Disponível</div>
+                <div class="amount" id="balance-amount">0.00 MT</div>
+            </div>
+
+            <div class="actions">
+                <button class="btn btn-primary" id="open-deposit-modal">
+                    <iconify-icon icon="mdi:plus-circle-outline" style="font-size: 1.2rem;"></iconify-icon>
+                    Depositar
+                </button>
+                <button class="btn btn-secondary" id="open-withdrawal-modal">
+                    <iconify-icon icon="mdi:arrow-top-right-thin-circle-outline" style="font-size: 1.2rem;"></iconify-icon>
+                    Levantar
+                </button>
+            </div>
+
+            <section class="transactions-section">
+                <h2>Histórico de Transações</h2>
+                <ul class="transaction-list" id="transaction-list">
+                    <!-- Transações serão inseridas aqui pelo JS -->
+                </ul>
+            </section>
+        </main>
+    </div>
+
+    <!-- MODAL DE DEPÓSITO -->
+    <div id="deposit-modal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" data-close-modal>×</span>
+            <h3>Solicitar Depósito</h3>
+            <div id="deposit-message" class="form-message"></div>
+            <form id="deposit-form">
+                <div class="input-group">
+                    <label for="deposit-amount">Valor (MT)</label>
+                    <input type="number" id="deposit-amount" class="input-field" placeholder="Ex: 100" required>
+                </div>
+                <div class="input-group">
+                    <label>Método de Pagamento</label>
+                    <!-- Adicionar seleção de método aqui se necessário -->
+                    <input type="text" class="input-field" value="M-Pesa / e-Mola" readonly>
+                </div>
+                <button type="submit" class="btn btn-primary">Confirmar e Ver Dados</button>
+            </form>
+            <div id="payment-details-container" style="display: none;" class="payment-instructions"></div>
+        </div>
+    </div>
+    
+    <!-- MODAL DE LEVANTAMENTO -->
+    <div id="withdrawal-modal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" data-close-modal>×</span>
+            <h3>Solicitar Levantamento</h3>
+            <div id="withdrawal-message" class="form-message"></div>
+            <form id="withdrawal-form">
+                <div class="input-group">
+                    <label for="withdrawal-amount">Valor (MT)</label>
+                    <input type="number" id="withdrawal-amount" class="input-field" placeholder="Ex: 500" required>
+                </div>
+                <!-- Adicionar campos de método e número de telefone -->
+                <button type="submit" class="btn btn-primary">Confirmar Levantamento</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://brainskill.onrender.com/api'; 
+        const token = localStorage.getItem('token');
+        let user = JSON.parse(localStorage.getItem('user'));
+
+        // Elementos
+        const balanceAmountEl = document.getElementById('balance-amount');
+        const transactionListEl = document.getElementById('transaction-list');
+        const depositModal = document.getElementById('deposit-modal');
+        const withdrawalModal = document.getElementById('withdrawal-modal');
+
+        // --- INICIALIZAÇÃO E AUTENTICAÇÃO ---
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!token || !user) {
+                window.location.href = 'login.html';
+                return;
+            }
+            updateBalanceDisplay();
+            fetchTransactions();
+            setupEventListeners();
+        });
+
+        function updateBalanceDisplay() {
+            balanceAmountEl.textContent = `${parseFloat(user.balance).toFixed(2)} MT`;
+        }
+
+        async function fetchTransactions() {
+            transactionListEl.innerHTML = '<p>Carregando...</p>';
+            const transactions = await apiCall('/transactions');
+            if (transactions && Array.isArray(transactions)) {
+                renderTransactions(transactions);
+            } else {
+                transactionListEl.innerHTML = '<p>Nenhuma transação encontrada.</p>';
+            }
+        }
+        
+        function renderTransactions(transactions) {
+            transactionListEl.innerHTML = '';
+            if (transactions.length === 0) {
+                transactionListEl.innerHTML = '<p>Nenhuma transação encontrada.</p>';
+                return;
+            }
+            transactions.forEach(tx => {
+                const isDeposit = tx.type === 'deposit';
+                const item = document.createElement('li');
+                item.className = `transaction-item ${tx.type}`;
+                item.innerHTML = `
+                    <div class="icon-container">
+                        <iconify-icon icon="${isDeposit ? 'mdi:arrow-down-bold-circle' : 'mdi:arrow-up-bold-circle'}" style="font-size: 2rem;"></iconify-icon>
+                    </div>
+                    <div class="details">
+                        <div class="type">${isDeposit ? 'Depósito' : 'Levantamento'} via ${tx.method}</div>
+                        <div class="date">${new Date(tx.createdAt).toLocaleString('pt-BR')}</div>
+                    </div>
+                    <div class="status-amount">
+                        <div class="amount">${isDeposit ? '+' : '-'} ${tx.amount.toFixed(2)} MT</div>
+                        <span class="status ${tx.status}">${tx.status.charAt(0).toUpperCase() + tx.status.slice(1)}</span>
+                    </div>
+                `;
+                transactionListEl.appendChild(item);
+            });
+        }
+
+        // --- LÓGICA DOS MODAIS ---
+        function openModal(modalId) { document.getElementById(modalId).classList.add('active'); }
+        function closeModal() { document.querySelectorAll('.modal.active').forEach(m => m.classList.remove('active')); }
+        
+        // --- EVENT LISTENERS ---
+        function setupEventListeners() {
+            document.getElementById('open-deposit-modal').addEventListener('click', () => openModal('deposit-modal'));
+            document.getElementById('open-withdrawal-modal').addEventListener('click', () => openModal('withdrawal-modal'));
+            document.querySelectorAll('[data-close-modal]').forEach(el => el.addEventListener('click', closeModal));
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+            });
+            document.getElementById('deposit-form').addEventListener('submit', handleDeposit);
+            // Adicionar listener para o formulário de levantamento
+        }
+
+        // --- LÓGICA DAS TRANSAÇÕES ---
+        async function handleDeposit(e) {
+            e.preventDefault();
+            const amount = document.getElementById('deposit-amount').value;
+            const messageEl = document.getElementById('deposit-message');
+            const detailsContainer = document.getElementById('payment-details-container');
+
+            messageEl.style.display = 'none';
+            detailsContainer.style.display = 'none';
+
+            // TODO: Adicionar validação de valor mínimo/máximo aqui do lado do cliente
+            const result = await apiCall('/deposit', 'POST', { amount, method: 'M-Pesa', phoneNumber: 'N/A' }); // Simplificado
+
+            if (result && result.paymentDetails) {
+                messageEl.className = 'form-message success';
+                messageEl.textContent = 'Pedido recebido! Use os dados abaixo para efetuar o pagamento.';
+                messageEl.style.display = 'block';
+
+                detailsContainer.innerHTML = `
+                    <strong>Instruções de Pagamento:</strong><br>
+                    Envie o valor exato para uma das contas abaixo e aguarde a aprovação do admin.<br><br>
+                    <strong>M-Pesa:</strong> ${result.paymentDetails.mpesa}<br>
+                    <strong>e-Mola:</strong> ${result.paymentDetails.emola}
+                `;
+                detailsContainer.style.display = 'block';
+                e.target.style.display = 'none'; // Esconde o formulário
+            } else {
+                messageEl.className = 'form-message error';
+                messageEl.textContent = result.message || 'Erro ao processar o pedido.';
+                messageEl.style.display = 'block';
+            }
+        }
+        
+        // --- FUNÇÃO DE CHAMADA À API ---
+        async function apiCall(endpoint, method = 'GET', body = null) {
+            const options = { method, headers: { 'Authorization': `Bearer ${token}` } };
+            if (body) {
+                options.headers['Content-Type'] = 'application/json';
+                options.body = JSON.stringify(body);
+            }
+            try {
+                const response = await fetch(`${API_URL}${endpoint}`, options);
+                if (response.status === 401) { logout(); return null; }
+                return response.json();
+            } catch (error) {
+                console.error('API Call Error:', error);
+                alert('Erro de conexão com o servidor.');
+                return null;
+            }
+        }
+        function logout() { localStorage.clear(); window.location.href = 'login.html'; }
+    </script>
+
+</body>
+</html>
